@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" class="yui3-loading">
+<head>
+    <meta charset="utf-8">
+    <title>Photo Browser</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/2.8.2/build/reset-fonts-grids/reset-fonts-grids.css" type="text/css">
+<style>
+#yui-main .yui-g ul {
+    display: block;
+    width: 100%;
+    min-height: 200px;
+    overflow: auto;
+}
+#yui-main .yui-g ul.loading {
+    background-image: url(bar.gif);
+    background-repeat: no-repeat;
+    background-position: 40% 40%;
+}
+#yui-main .yui-g ul li {
+    *float: left;
+    display: inline-block;
+    margin: 1em;
+    width: 10%;
+}
+#yui-main .yui-g ul li img {
+    border: 3px solid black;
+}
+#yui-main .yui-g ul li.loading img {
+    border: none;
+}
+#yui-main .yui-g ul li.loading {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+#yui-main .yui-g ul li img {
+    width: 100%;
+}
+#yui-main .yui-g ul li img.selected {
+    border: 3px solid #426FD9;
+}
+#yui-main .yui-g ul:after { display: block; clear: both; visibility: hidden; content: '.'; height: 0;}
+.yui3-dd-proxy {
+    background-image: url( countBadge.png );
+    background-repeat: no-repeat;
+    color: white;
+    font-weight: bold;
+}
+.yui3-dd-proxy span {
+    display: block;
+    margin-top: 4px;
+}
+#photoList li a {
+    display: block;
+    background-image: url( folder.png );
+    background-repeat: no-repeat;
+    background-position: 1px 3px;
+    padding: 3px;
+    padding-left: 23px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    text-decoration: none;
+    color: black;
+}
+#photoList li a span {
+    padding-left: 3px;
+    font-size: 80%;
+    color: #333;
+}
+#photoList li a:hover {
+    background-color: #B3D4FF;
+}
+#photoList li.selected a {
+    background-color: #B3D4FF;
+    font-weight: bold;
+}
+#photoList li.all a {
+    background-image: url(photo.png);
+}
+#photoList li.yui3-dd-drop-over a {
+    border-color: black;
+    background-image: url( folder_open.png );
+}
+#bd .yui-b p {
+    margin: 1em;
+}
+.yui3-skin-sam #ft .yui3-slider-rail-x {
+    background-position: 0 8px;
+}
+.yui3-skin-sam #ft strong,
+.yui3-skin-sam #ft em {
+    float: right;
+    background-image: url(thumbnail.png);
+    display: block;
+    height: 32px;
+    width: 32px;
+    background-repeat: no-repeat;
+    background-position: 8px 8px;
+}
+.yui3-skin-sam #ft strong {
+    background-image: url(thumbnail_large.png);
+    background-position: 0 0;
+}
+.yui3-skin-sam #ft .horiz_slider {
+    float: right;
+    margin: 5px 5px 0;
+    padding: 0 5px;
+}
+#yui-main .yui-g ul li.hidden {
+    display: none;
+}
+
+#ft.loading em, #ft.loading strong {
+    display: none;
+}
+
+
+</style>
+    <script src="http://yui.yahooapis.com/3.10.3/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+
+<div id="doc3" class="yui-t1">
+    <div id="bd">
+        <div id="yui-main">
+          <div class="yui-b">
+                <div class="yui-g">
+                    <ul>
+                    </ul>
+              </div>
+            </div>
+      </div>
+      <div class="yui-b">
+            <ul id="photoList">
+                <li class="all selected"><a href="#">All Photos</a></li>
+                <li id="a_1"><a href="#">Album #1<span>(0)</span></a></li>
+                <li id="a_2"><a href="#">Album #2<span>(0)</span></a></li>
+                <li id="a_3"><a href="#">Album #3<span>(0)</span></a></li>
+                <li id="a_4"><a href="#">Album #4<span>(0)</span></a></li>
+            </ul>
+            <p>Click and drag a photo to an album above. You can also Shift + Click to select and drag multiple photos.</p>
+            <p>Click on an album to view the photos that you added.</p>
+            <p>You can also use the slider at the bottom to adjust the size of the image to help fit them on your screen.</p>
+        </div>
+    </div>
+    <div id="ft" class="loading"><strong></strong><div class="horiz_slider"></div><em></em></div>
+</div>
+
+
+<script>
+YUI().use('yql', 'node', 'anim', 'dd', 'dd-plugin', 'dd-drop-plugin', 'slider', 'stylesheet', 'event-delegate', function(Y) {
+    //Get a reference to the wrapper to use later and add a loading class to it.
+    var wrapper = Y.one('#yui-main .yui-g ul').addClass('loading');
+    //Set it's height to the height of the viewport so we can scroll it.
+    wrapper.setStyle('height', (wrapper.get('winHeight') - 50 )+ 'px');
+    Y.on('windowresize', function() { wrapper.setStyle('height', (wrapper.get('winHeight') - 50 )+ 'px'); });
+
+var photos = [
+"http://santex.github.io/propaganda-datenspuren-2014/110106surveillance1.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Fukushima-Japan.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/NASA-Hacked.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/121206094354-account-attack-monster.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/gchq-1.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/New-Flag.jpeg",
+"http://santex.github.io/propaganda-datenspuren-2014/18.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/german-election-merkel-party.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/nsagis.si_1.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/281106surveillance.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/german-email-encryption-nsa.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/nsaheadquarters.png",
+"http://santex.github.io/propaganda-datenspuren-2014/2nazi-hunters-simon-wiesenthal.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/giorgiaguidestones06a_02a.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/nwo146_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/36.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globalbanking171_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/nwo62_08.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/3832008848_b1591d984c.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globalbanking192_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/NyccOuV.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/3837549-bomb-warning-sign-orange-triangle-symbol-arriere-plan-blanc.jpg  globalbanking195_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/o-AARON-SWARTZ-MIT-facebook.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/41423.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globalbanking197_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/obama07_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/911Truth2-1185x803.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globalbanking68_02.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/obama90_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/913e64e0d64ad273eba132fe60557d5a.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globalelite13_02.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/obama-portrait-michael-murphy1.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/a9421b1ee37e0380aafac80d799bd96b.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/global-telepathy.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/obama-shhhh3.png",
+"http://santex.github.io/propaganda-datenspuren-2014/agenda-21-trojan-horse.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/globe.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/out.html",
+"http://santex.github.io/propaganda-datenspuren-2014/anti-terrorism.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/GMO-label.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/outsource_dees.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/bigbrother124_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/gold10_03.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/photo4.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/bigbrother140_02.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/google-glass-facial-recognition-hack.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/picture-7.png",
+"http://santex.github.io/propaganda-datenspuren-2014/bigbrother96_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/hand-of-conspiracy2.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/piedras_ica_4.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/bigbrother97_02.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Iceland-Jails-Bankers.png",
+"http://santex.github.io/propaganda-datenspuren-2014/predator-firing-missile4.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/bigcrash168_06.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/icke31_13.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/rl5ZyEC.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/brotherhoodss16_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/icke49_44.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/rt-13.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/bush34_02.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/icke53_05.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/sadliberty.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/capitalism-cartoonweb.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/icke53_45.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/salud23o_07.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/contact04_12.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/illuminati12_03.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Screen-shot-2012-08-15-at-12.35.10-PM-300x250.png",
+"http://santex.github.io/propaganda-datenspuren-2014/crowd.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/illuminati37_12.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/screen_shot_2012-10-05_at_2.28.41_pm.png",
+"http://santex.github.io/propaganda-datenspuren-2014/crypto10.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Illustration-Man-with-big-brother-eye-watching-him-use-computer.jpg  secrecyForSale_CPI_Header.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/crypto14.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/internetgoogle03_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Secret-NSA-Program-Collected-All-American-Email-Data.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/crypto52.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/iran33_27.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/senators_call_for_surveillance_inquiry.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/crypto56.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/JosephineMilleniumTree.png",
+"http://santex.github.io/propaganda-datenspuren-2014/sion44_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/darpa11_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/k-bigpic1.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/s_o06_32696457.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/DbeUPVdh.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/LargeScrewAnthonyFreda.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/SprayerAndExhaustInstalled-1024x612.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/dees-fed-reserve-spider.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/latuff_obama_libya.gif",
+"http://santex.github.io/propaganda-datenspuren-2014/These-10-Corporations-Control-Almost-Everything-You-Buy.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/defeatcancer129_03.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/martiallawusa04_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Truth-Lies-Wallpaper__yvt2.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/depopu30_04.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/martiallawusa17_05.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/tumblr_lp7xpj4erT1qjvxfho1_500.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/dollarbill2.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/mediacontrol107_00.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/uk-spy-laws-parliament.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/DQVJA5J62NGMMOPJ.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/mediacontrol22_03.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/viIKbBE.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/dulcebook_denver12.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/mediacontrol29_20.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/warterror05_12.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/echelon1.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/mediacontrol33_04.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Webcam-Spying.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/endgame09_04.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/mediacontrol51_03.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/when-the-lights-go-out.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/evilinside.png",
+"http://santex.github.io/propaganda-datenspuren-2014/merkel.si_.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/wikileaks37_01.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/fb.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/ModernTelecom_2.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/World-Poverty.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/fraud-obama-6-735308.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/monsantkids_dees-550x488.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/WqpZoKU.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Freda-big-brother.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Monsanto_Designing_Nature.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/zionolympics_big.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/freedom.png",
+"http://santex.github.io/propaganda-datenspuren-2014/murals07.jpg",
+"http://santex.github.io/propaganda-datenspuren-2014/Zombie-Photo-By-Bob-Jagendorf.jpeg"
+];
+
+
+            Y.each(photos, function(v, k) {
+                //Create our URL
+
+                var url = v,
+                    //Create the image and the LI
+                    li = Y.Node.create('<li class="loading"><img src="file://' + v + '" title="' + k + '"></li>'),
+                    //Get the image from the LI
+                    img = li.get('firstChild');
+                //Append the li to the wrapper
+                wrapper.appendChild(li);
+                //This little hack moves the tall images to the bottom of the list
+                //So they float better ;)
+                img.on('load', function() {
+                    //Is the height longer than the width?
+                    var c = ((this.get('height') > this.get('width')) ? 'tall' : 'wide');
+                    this.addClass(c);
+                    if (c === 'tall') {
+                        //Move it to the end of the list.
+                        this.get('parentNode.parentNode').removeChild(this.get('parentNode'));
+                        wrapper.appendChild(this.get('parentNode'));
+                    }
+                    this.get('parentNode').removeClass('loading');
+                });
+            });
+            //Get all the newly added li's
+            wrapper.all('li').each(function(node) {
+                //Plugin the Drag plugin
+                this.plug(Y.Plugin.Drag, {
+                    offsetNode: false
+                });
+                //Plug the Proxy into the DD object
+                this.dd.plug(Y.Plugin.DDProxy, {
+                    resizeFrame: false,
+                    moveOnEnd: false,
+                    borderStyle: 'none'
+                });
+            });
+            //Create and render the slider
+            var sl = new Y.Slider({
+                length: '1000px', value: 40, max: 70, min: 5
+            }).render('.horiz_slider');
+            //Listen for the change
+            sl.after('valueChange',function (e) {
+                //Insert a dynamic stylesheet rule:
+                var sheet = new Y.StyleSheet('image_slider');
+                sheet.set('#yui-main .yui-g ul li', {
+                    width: (e.newVal / 2) + '%'
+                });
+            });
+            //Remove the DDM as a bubble target..
+            sl._dd.removeTarget(Y.DD.DDM);
+            //Remove the wrappers loading class
+            wrapper.removeClass('loading');
+            Y.one('#ft').removeClass('loading');
+
+    //Listen for all mouseup's on the document (selecting/deselecting images)
+    Y.delegate('mouseup', function(e) {
+        if (!e.shiftKey) {
+            //No shift key - remove all selected images
+            wrapper.all('img.selected').removeClass('selected');
+        }
+        //Check if the target is an image and select it.
+        if (e.target.test('#yui-main .yui-g ul li img')) {
+            e.target.addClass('selected');
+        }
+    }, document, '*');
+
+    //Listen for all clicks on the '#photoList li' selector
+    Y.delegate('click', function(e) {
+        //Prevent the click
+        e.halt();
+        //Remove all the selected items
+        e.currentTarget.get('parentNode').all('li.selected').removeClass('selected');
+        //Add the selected class to the one that one clicked
+        e.currentTarget.addClass('selected');
+        //The "All Photos" link was clicked
+        if (e.currentTarget.hasClass('all')) {
+            //Remove all the hidden classes
+            wrapper.all('li').removeClass('hidden');
+        } else {
+            //Another "album" was clicked, get it's id
+            var c = e.currentTarget.get('id');
+            //Hide all items by adding the hidden class
+            wrapper.all('li').addClass('hidden');
+            //Now, find all the items with the class name the same as the album id
+            //and remove the hidden class
+            wrapper.all('li.' + c).removeClass('hidden');
+        }
+    }, document, '#photoList li');
+
+    //Stop the drag with the escape key
+    Y.one(document).on('keyup', function(e) {
+        //The escape key was pressed
+        if ((e.keyCode === 27) || (e.charCode === 27)) {
+            //We have an active Drag
+            if (Y.DD.DDM.activeDrag) {
+                //Stop the drag
+                Y.DD.DDM.activeDrag.stopDrag();
+            }
+        }
+    });
+    //On the drag:mouseDown add the selected class
+    Y.DD.DDM.on('drag:mouseDown', function(e) {
+        var img = e.target.get('node').one('img');
+        //If it's a gesture event, then we need to act differently
+        if (Y.DD.Drag.START_EVENT.indexOf('gesture') === 0) {
+            if (img.hasClass('selected')) {
+                img.removeClass('selected');
+            } else {
+                img.addClass('selected');
+            }
+        } else {
+            img.removeClass('selected');
+        }
+    });
+    //On drag start, get all the selected elements
+    //Add the count to the proxy element and offset it to the cursor.
+    Y.DD.DDM.on('drag:start', function(e) {
+        var img = e.target.get('node').one('img').addClass('selected');
+        //How many items are selected
+        var count = wrapper.all('img.selected').size();
+        //Set the style on the proxy node
+        e.target.get('dragNode').setStyles({
+            height: '25px', width: '25px'
+        }).set('innerHTML', '<span>' + count + '</span>');
+        //Offset the dragNode
+        e.target.deltaXY = [25, 5];
+    });
+    //We dropped on a drop target
+    Y.DD.DDM.on('drag:drophit', function(e) {
+        //get the images that are selected.
+        var imgs = wrapper.all('img.selected'),
+            //The xy position of the item we dropped on
+            toXY = e.drop.get('node').getXY();
+
+        imgs.each(function(node) {
+            //Clone the image, position it on top of the original and animate it to the drop target
+            node.get('parentNode').addClass(e.drop.get('node').get('id'));
+            var n = node.cloneNode().set('id', '').setStyle('position', 'absolute');
+            Y.one('body').appendChild(n);
+            n.setXY(node.getXY());
+            new Y.Anim({
+                node: n,
+                to: {
+                    height: 20, width: 20, opacity: 0,
+                    top: toXY[1], left: toXY[0]
+                },
+                from: {
+                    width: node.get('offsetWidth'),
+                    height: node.get('offsetHeight')
+                },
+                duration: .5
+            }).run();
+        });
+        //Update the count
+        var count = wrapper.all('li.' + e.drop.get('node').get('id')).size();
+        e.drop.get('node').one('span').set('innerHTML', '(' + count + ')');
+    });
+    //Add drop support to the albums
+    Y.all('#photoList li').each(function(node) {
+        if (!node.hasClass('all')) {
+            //make all albums Drop Targets except the all photos.
+            node.plug(Y.Plugin.Drop);
+        }
+    });
+});
+
+
+</script>
+
+
+
+
+</body>
+</html>
