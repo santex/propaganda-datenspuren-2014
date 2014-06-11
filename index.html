@@ -292,7 +292,7 @@ var photos = [
 
                 var url = v,
                     //Create the image and the LI
-                    li = Y.Node.create('<li class="loading"><img src="file://' + v + '" title="' + k + '"></li>'),
+                    li = Y.Node.create('<li class="loading"><img src="' + v + '" title="' + k + '"></li>'),
                     //Get the image from the LI
                     img = li.get('firstChild');
                 //Append the li to the wrapper
